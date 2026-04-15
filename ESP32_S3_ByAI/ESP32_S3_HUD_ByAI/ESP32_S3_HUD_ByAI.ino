@@ -1,7 +1,8 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <NimBLEDevice.h>
-#include <TinyGPS++.h>
+//#include <TinyGPS++.h>
+#include <TinyGPSPlus.h>
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <RTClib.h>
@@ -16,8 +17,8 @@
 #define CORE_COMM 0
 #define CORE_UI   1
 
-#define LED_PIN 4
-#define BTN_PIN 0
+#define LED_PIN 48
+#define BTN_PIN 40
 #define BUZZER  5
 
 #define SPEED_LIMIT 80
@@ -34,6 +35,19 @@ RTC_PCF8563 rtc;
 Adafruit_NeoPixel led(1, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 AsyncWebServer server(80);
+
+////////////////////////////////////////////////////////////
+// WATCHDOG - New (v3.0.x and later)
+////////////////////////////////////////////////////////////
+// 1. Create a configuration struct
+esp_task_wdt_config_t twdt_config = {
+    .timeout_ms = 10000,           // Timeout in milliseconds
+    .idle_core_mask = (1 << 0),    // Bitmask of cores to watch (e.g., core 0)
+    .trigger_panic = true,         // Enable panic (reset) on timeout
+};
+
+// 2. Pass the address of the struct
+//esp_task_wdt_init(&twdt_config); 
 
 ////////////////////////////////////////////////////////////
 // HUD DATA
@@ -346,12 +360,23 @@ void TaskWiFi(void *pv)
 void setup()
 {
     Serial.begin(115200);
+    delay(1000);
+    if (psramFound()) {
+        Serial.println("PSRAM is available and working!");
+        Serial.print("Total PSRAM: ");
+        Serial.println(ESP.getPsramSize());
+    } else {
+        Serial.println("PSRAM not detected!");
+    }
+    Serial.print("Flash: ");
+    Serial.println(ESP.getFlashChipSize());
 
     dataMutex = xSemaphoreCreateMutex();
 
     led.begin();
 
-    esp_task_wdt_init(5,true);
+    //esp_task_wdt_init(5,true);        //error 
+    esp_task_wdt_init(&twdt_config);    //New (v3.0.x and later)
 
     xTaskCreatePinnedToCore(TaskGNSS,"GNSS",4096,NULL,3,&taskGNSS,CORE_COMM);
     xTaskCreatePinnedToCore(TaskDisplay,"DISPLAY",4096,NULL,2,&taskDisplay,CORE_UI);
@@ -362,12 +387,8 @@ void setup()
     xTaskCreatePinnedToCore(TaskWiFi,"WIFI",4096,NULL,1,&taskWiFi,CORE_COMM);
 }
 
-void loop(){}void setup() {
-  // put your setup code here, to run once:
-
-}
-
 void loop() {
   // put your main code here, to run repeatedly:
-
+    esp_task_wdt_reset();
+    vTaskDelay(1000);
 }
