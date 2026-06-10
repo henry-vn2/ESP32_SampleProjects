@@ -1,3 +1,4 @@
+#include "Tft_Setup.h"
 #include "User_Setup.h"
 #include <TFT_eSPI.h> // Graphics and font library for ST7735 driver chip
 
