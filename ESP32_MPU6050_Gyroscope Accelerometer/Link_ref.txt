@@ -1,0 +1,4 @@
+https://iotzone.vn/esp32/cach-dung-esp32-mpu6050/
+
+https://randomnerdtutorials.com/esp32-mpu-6050-accelerometer-gyroscope-arduino/
+
